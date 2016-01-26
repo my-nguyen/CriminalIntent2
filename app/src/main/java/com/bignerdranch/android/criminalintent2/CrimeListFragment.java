@@ -36,13 +36,27 @@ public class CrimeListFragment extends Fragment {
       return view;
    }
 
+   @Override
+   public void onResume() {
+      super.onResume();
+      updateUI();
+   }
+
    private void updateUI() {
       CrimeLab crimeLab = CrimeLab.get(getActivity());
       List<Crime> crimes = crimeLab.getCrimes();
-      // create a CrimeAdapter
-      mAdapter = new CrimeAdapter(crimes);
-      // connect the CrimeAdapter to the RecyclerView
-      mCrimeRecyclerView.setAdapter(mAdapter);
+
+      if (mAdapter == null) {
+         // create a CrimeAdapter
+         mAdapter = new CrimeAdapter(crimes);
+         // connect the CrimeAdapter to the RecyclerView
+         mCrimeRecyclerView.setAdapter(mAdapter);
+      }
+      else
+         // inform the adapter that the data has changed; an instance of this occurrence is when
+         // user selects a Crime from the list, updates its contents, then returns to the list. the
+         // list must display updates of the selected Crime.
+         mAdapter.notifyDataSetChanged();
    }
 
    // this class handles touch events
