@@ -8,6 +8,7 @@ import android.support.v4.app.FragmentActivity;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
+import android.support.v7.app.AppCompatActivity;
 
 import java.util.List;
 import java.util.UUID;
@@ -18,7 +19,8 @@ import java.util.UUID;
 // this class is a replacement for CrimeActivity; it is also invoked by CrimeListFragment via
 // startActivity(Intent). it lets users navigate between list items by swiping across the screen to
 // "page" forward or backward through the crimes.
-public class CrimePagerActivity extends FragmentActivity {
+// extends from AppCompatActivity (as opposed to FragmentActivity previously) to have a toolbar
+public class CrimePagerActivity extends AppCompatActivity {
    private ViewPager   mViewPager;
    private List<Crime> mCrimes;
    private static final String EXTRA_CRIME_ID = "com.bignerdranch.android.criminalintent2.crime_id";
