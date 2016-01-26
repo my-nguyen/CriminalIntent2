@@ -90,7 +90,10 @@ public class CrimeListFragment extends Fragment {
          // Toast.makeText(getActivity(), mCrime.getTitle() + " clicked!", Toast.LENGTH_SHORT).show();
          // create an explicit Intent that names the CrimeActivity class; use getActivity() to pass
          // the hosting activity as the Context object that the Intent constructor requires.
-         Intent intent = CrimeActivity.newIntent(getActivity(), mCrime.getId());
+         // Intent intent = CrimeActivity.newIntent(getActivity(), mCrime.getId());
+         // CrimePagerActivity replaces CrimeActivity and enables user to swipe a Crime detail page
+         // in order to move forward or backward to another Crime.
+         Intent intent = CrimePagerActivity.newIntent(getActivity(), mCrime.getId());
          startActivity(intent);
       }
    }
