@@ -107,6 +107,15 @@ public class CrimeFragment extends Fragment {
          mDateButton.setText(mCrime.getDate().toString());
       }
    }
+
+   @Override
+   // Crime instances get modified in CrimeFragment, and will need to be written out when
+   // CrimeFragment is done.
+   public void onPause() {
+      super.onPause();
+      CrimeLab.get(getActivity()).updateCrime(mCrime);
+   }
+
    // passing data from Activity to Fragment, second and better approach: to stash the crime ID
    // someplace that belongs to CrimeFragment rather than keeping it in CrimeActivity’s personal
    // space. the CrimeFragment could then retrieve this data without relying on the presence of a

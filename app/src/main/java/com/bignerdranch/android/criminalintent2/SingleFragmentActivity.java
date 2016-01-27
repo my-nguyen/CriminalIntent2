@@ -23,7 +23,6 @@ public abstract class SingleFragmentActivity extends AppCompatActivity {
       FragmentManager manager = getSupportFragmentManager();
       // ask the FragmentManager for the fragment with a container view ID of R.id.fragment_container
       Fragment fragment = manager.findFragmentById(R.id.fragment_container);
-      Log.d("NGUYEN", "in SingleFragmentActivity.onCreate(), fragment=" + fragment);
       // if there is no fragment with the given container view ID
       if (fragment == null) {
          fragment = createFragment();

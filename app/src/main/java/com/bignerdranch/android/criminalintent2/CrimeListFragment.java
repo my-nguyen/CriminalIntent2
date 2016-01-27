@@ -6,6 +6,7 @@ import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -118,6 +119,7 @@ public class CrimeListFragment extends Fragment {
 
    private void updateUI() {
       CrimeLab crimeLab = CrimeLab.get(getActivity());
+      // load all Crimes from the database
       List<Crime> crimes = crimeLab.getCrimes();
 
       if (mAdapter == null) {
@@ -126,11 +128,14 @@ public class CrimeListFragment extends Fragment {
          // connect the CrimeAdapter to the RecyclerView
          mCrimeRecyclerView.setAdapter(mAdapter);
       }
-      else
+      else {
+         // update the list of Crimes in the adapter
+         mAdapter.setCrimes(crimes);
          // inform the adapter that the data has changed; an example of this occurrence is when
          // user selects a Crime from the list, updates its contents, then returns to the list. the
          // list must display updates of the selected Crime.
          mAdapter.notifyDataSetChanged();
+      }
 
       // update subtitle text when returning to CrimeListActivity from CrimePagerActivity via the
       // Back button. returning via the Up button still resets the subtitle text, and there's no
@@ -206,6 +211,10 @@ public class CrimeListFragment extends Fragment {
       @Override
       public int getItemCount() {
          return mCrimes.size();
+      }
+
+      public void setCrimes(List<Crime> crimes) {
+         mCrimes = crimes;
       }
    }
 }

@@ -9,7 +9,6 @@ import android.util.Log;
 public class CrimeListActivity extends SingleFragmentActivity {
    @Override
    protected Fragment createFragment() {
-      Log.d("NGUYEN", "in CrimeListActivity.createFragment()");
       return new CrimeListFragment();
    }
 }
