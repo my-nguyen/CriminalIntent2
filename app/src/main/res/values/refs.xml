@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- this resource is a layout; it has an ID of activity_masterdetail, and its value is a
+     reference to the layout activity_fragment, so you can use activity_masterdetail in place of
+     activity_fragment. because this alias resource is in res/values, it's the default alias, so
+     by default CrimeListActivity inflates activity_fragment, the single-pane layout -->
+    <item name="activity_masterdetail" type="layout">@layout/activity_fragment</item>
+</resources>

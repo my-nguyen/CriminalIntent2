@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- located in res/values-sw600dp, this alias resource is used on any device whose smallest
+     dimension is 600dp or greater (tablet-sized screen). so for larger devices, the alias points
+     to the layout activity_twopane -->
+    <item name="activity_masterdetail" type="layout">@layout/activity_twopane</item>
+</resources>

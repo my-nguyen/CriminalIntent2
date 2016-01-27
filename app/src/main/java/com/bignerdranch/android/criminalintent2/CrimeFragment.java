@@ -41,11 +41,29 @@ public class CrimeFragment extends Fragment {
    private ImageButton  mPhotoButton;
    private ImageView    mPhotoView;
    private File         mPhotoFile;
+   private Callbacks    mCallbacks;
    private static final String   ARG_CRIME_ID = "crime_id";
    private static final String   DIALOG_DATE = "DialogDate";
    private static final int      REQUEST_DATE = 0;
    private static final int      REQUEST_CONTACT = 1;
    private static final int      REQUEST_PHOTO = 2;
+
+   // required interface for hosting activities (CrimeListActivity and CrimePagerActivity)
+   interface Callbacks {
+      void onCrimeUpdated(Crime crime);
+   }
+
+   @Override
+   public void onAttach(Activity activity) {
+      super.onAttach(activity);
+      mCallbacks = (Callbacks)activity;
+   }
+
+   @Override
+   public void onDetach() {
+      super.onDetach();
+      mCallbacks = null;
+   }
 
    @Override
    public void onCreate(Bundle savedInstanceState) {
@@ -70,14 +88,15 @@ public class CrimeFragment extends Fragment {
          @Override
          public void beforeTextChanged(CharSequence s, int start, int count, int after) {
          }
-
          @Override
          // this method is the only one to care about; the other 2 methods are ignored. this method
-         // sets the Crime title to the text entered by the user.
+         // performs updates when the user enters text
          public void onTextChanged(CharSequence s, int start, int before, int count) {
+            // set the Crime's title to the text entered by the user.
             mCrime.setTitle(s.toString());
+            // update the database and notify the hosting activity to do its updates
+            updateCrime();
          }
-
          @Override
          public void afterTextChanged(Editable s) {
          }
@@ -107,6 +126,8 @@ public class CrimeFragment extends Fragment {
          public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
             // set the Crime's solved property
             mCrime.setSolved(isChecked);
+            // update the database and notify the hosting activity to do its updates
+            updateCrime();
          }
       });
 
@@ -191,6 +212,8 @@ public class CrimeFragment extends Fragment {
                // view accordingly.
                Date date = (Date)data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
                mCrime.setDate(date);
+               // save Date updates to the database and notify hosting activity to update
+               updateCrime();
                mDateButton.setText(mCrime.getDate().toString());
                break;
             case REQUEST_CONTACT:
@@ -213,6 +236,8 @@ public class CrimeFragment extends Fragment {
                         cursor.moveToFirst();
                         String suspect = cursor.getString(0);
                         mCrime.setSuspect(suspect);
+                        // save Suspect updates to the database and notify hosting activity to update
+                        updateCrime();
                         mSuspectButton.setText(suspect);
                      }
                   } finally {
@@ -220,6 +245,8 @@ public class CrimeFragment extends Fragment {
                   }
                }
             case REQUEST_PHOTO:
+               // save Photo updates to the database and notify hosting activity to update
+               updateCrime();
                updatePhotoView();
          }
    }
@@ -264,5 +291,13 @@ public class CrimeFragment extends Fragment {
          Bitmap bitmap = PictureUtils.getScaledBitmap(mPhotoFile.getPath(), getActivity());
          mPhotoView.setImageBitmap(bitmap);
       }
+   }
+
+   // this is a helper method that saves Crime updates to the CrimeLab then invokes a callback to
+   // notify the hosting activities to perform its updates too. here the hosting activity
+   // CrimeListActivity will query the database and refresh its list on the UI.
+   private void updateCrime() {
+      CrimeLab.get(getActivity()).updateCrime(mCrime);
+      mCallbacks.onCrimeUpdated(mCrime);
    }
 }

@@ -1,12 +1,12 @@
 package com.bignerdranch.android.criminalintent2;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -25,7 +25,25 @@ public class CrimeListFragment extends Fragment {
    private RecyclerView mCrimeRecyclerView;
    private CrimeAdapter mAdapter;
    private boolean      mSubtitleVisible;
+   private Callbacks    mCallbacks;
    private static final String   SAVED_SUBTITLE_VISIBLE = "subtitle";
+
+   // required interface, so that CrimeListFragment can call methods on its hosting activity
+   public interface Callbacks {
+      void onCrimeSelected(Crime crime);
+   }
+
+   @Override
+   public void onAttach(Activity activity) {
+      super.onAttach(activity);
+      mCallbacks = (Callbacks)activity;
+   }
+
+   @Override
+   public void onDetach() {
+      super.onDetach();
+      mCallbacks = null;
+   }
 
    @Override
    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -79,9 +97,11 @@ public class CrimeListFragment extends Fragment {
             Crime crime = new Crime();
             // add the new Crime to the CrimeLab
             CrimeLab.get(getActivity()).addCrime(crime);
-            // start CrimePagerActivity to edit the new Crime
-            Intent intent = CrimePagerActivity.newIntent(getActivity(), crime.getId());
-            startActivity(intent);
+            // reload the list immediately upon adding a new Crime via the callback below
+            updateUI();
+            // callback to have the hosting activity (CrimeListActivity) start the appropriate
+            // interface (phone or tablet)
+            mCallbacks.onCrimeSelected(crime);
             // no further processing
             return true;
          case R.id.menu_item_show_subtitle:
@@ -117,7 +137,7 @@ public class CrimeListFragment extends Fragment {
       activity.getSupportActionBar().setSubtitle(subtitle);
    }
 
-   private void updateUI() {
+   public void updateUI() {
       CrimeLab crimeLab = CrimeLab.get(getActivity());
       // load all Crimes from the database
       List<Crime> crimes = crimeLab.getCrimes();
@@ -170,10 +190,9 @@ public class CrimeListFragment extends Fragment {
 
       @Override
       public void onClick(View view) {
-         // CrimePagerActivity replaces CrimeActivity and enables user to swipe a Crime detail page
-         // in order to move forward or backward to another Crime.
-         Intent intent = CrimePagerActivity.newIntent(getActivity(), mCrime.getId());
-         startActivity(intent);
+         // callback to have the hosting activity (CrimeListActivity) start the appropriate
+         // interface (phone or tablet)
+         mCallbacks.onCrimeSelected(mCrime);
       }
    }
 

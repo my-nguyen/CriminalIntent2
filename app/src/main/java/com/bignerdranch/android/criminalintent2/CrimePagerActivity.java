@@ -21,10 +21,16 @@ import java.util.UUID;
 // startActivity(Intent). it lets users navigate between list items by swiping across the screen to
 // "page" forward or backward through the crimes.
 // extends from AppCompatActivity (as opposed to FragmentActivity previously) to have a toolbar
-public class CrimePagerActivity extends AppCompatActivity {
+public class CrimePagerActivity extends AppCompatActivity implements CrimeFragment.Callbacks {
    private ViewPager   mViewPager;
    private List<Crime> mCrimes;
    private static final String EXTRA_CRIME_ID = "com.bignerdranch.android.criminalintent2.crime_id";
+
+   @Override
+   public void onCrimeUpdated(Crime crime) {
+      // since CrimePagerActivity is a hosting activity for CrimeFragment, it must implement the
+      // interface CrimeFragment.Callbacks. but the implementation is empty since it does nothing.
+   }
 
    @Override
    protected void onCreate(Bundle savedInstanceState) {
