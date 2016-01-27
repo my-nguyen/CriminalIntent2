@@ -4,6 +4,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.Environment;
 import android.util.Log;
 
 import com.bignerdranch.android.criminalintent2.database.CrimeBaseHelper;
@@ -11,6 +12,7 @@ import com.bignerdranch.android.criminalintent2.database.CrimeCursorWrapper;
 import com.bignerdranch.android.criminalintent2.database.CrimeDbSchema;
 import com.bignerdranch.android.criminalintent2.database.CrimeDbSchema.CrimeTable;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -92,6 +94,14 @@ public class CrimeLab {
       ContentValues values = getContentValues(crime);
       // update Crime table with ContentValues where UUID is the Crime ID
       mDatabase.update(CrimeTable.NAME, values, CrimeTable.Cols.UUID + " = ?", new String[]{uuidString});
+   }
+
+   public File getPhotoFile(Crime crime) {
+      // get a handle to the folder on primary external storage in which to store picture files
+      File externalFileDir = mContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
+      // return null if there's no external storage; otherwise return a File object that points to
+      // the right location
+      return externalFileDir == null ? null : new File(externalFileDir, crime.getPhotoFilename());
    }
 
    // ContentValues is a helper class for writing key-value pairs, specifically designed to store

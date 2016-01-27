@@ -4,9 +4,11 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract;
+import android.provider.MediaStore;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.text.Editable;
@@ -19,7 +21,10 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.ImageView;
 
+import java.io.File;
 import java.util.Date;
 import java.util.UUID;
 
@@ -27,29 +32,30 @@ import java.util.UUID;
  * Created by My on 1/25/2016.
  */
 public class CrimeFragment extends Fragment {
-   private Crime     mCrime;
-   private EditText  mTitleField;
-   private Button    mDateButton;
-   private CheckBox  mSolvedCheckBox;
-   private Button    mReportButton;
-   private Button    mSuspectButton;
+   private Crime        mCrime;
+   private EditText     mTitleField;
+   private Button       mDateButton;
+   private CheckBox     mSolvedCheckBox;
+   private Button       mReportButton;
+   private Button       mSuspectButton;
+   private ImageButton  mPhotoButton;
+   private ImageView    mPhotoView;
+   private File         mPhotoFile;
    private static final String   ARG_CRIME_ID = "crime_id";
    private static final String   DIALOG_DATE = "DialogDate";
    private static final int      REQUEST_DATE = 0;
    private static final int      REQUEST_CONTACT = 1;
+   private static final int      REQUEST_PHOTO = 2;
 
    @Override
    public void onCreate(Bundle savedInstanceState) {
       super.onCreate(savedInstanceState);
-      // passing data from Activity to Fragment, first and shortcut approach: access to
-      // the activity's intent from this Fragment via getIntent(). having the fragment access the
-      // intent that belongs to the hosting activity makes for simple code. however, it costs you
-      // the encapsulation of your fragment. CrimeFragment is no longer a reusable building block
-      // because it expects that it will always be hosted by an activity whose Intent defines an
-      // extra named com.bignerdranch.android.criminalintent.crime_id.
-      // UUID crimeId = (UUID)getActivity().getIntent().getSerializableExtra(CrimeActivity.EXTRA_CRIME_ID);
+      // extract the Crime ID from Intent's extra
       UUID crimeId = (UUID)getArguments().getSerializable(ARG_CRIME_ID);
+      // fetch Crime from CrimeLab based on ID
       mCrime = CrimeLab.get(getActivity()).getCrime(crimeId);
+      // get the location of the photo file
+      mPhotoFile = CrimeLab.get(getActivity()).getPhotoFile(mCrime);
    }
 
    @Override
@@ -142,9 +148,36 @@ public class CrimeFragment extends Fragment {
       // check to see if the device has a Contacts app; otherwise this application will crash
       PackageManager packageManager = getActivity().getPackageManager();
       // PackageManager knows about all the components installed on your device. resolveActivity()
-      // asks PackageManager to find an activity that matches the Intent given.
+      // asks PackageManager to find a Contracts app on the device
       if (packageManager.resolveActivity(pickContact, PackageManager.MATCH_DEFAULT_ONLY) == null)
          mSuspectButton.setEnabled(false);
+
+      mPhotoButton = (ImageButton)view.findViewById(R.id.crime_camera);
+      // MediaStore class defines the public interfaces used for interacting with common media --
+      // images, videos, and music. ACTION_IMAGE_CAPTURE action will fire up a camera activity and
+      // take a picture
+      final Intent captureImage = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+      // check if there's a location at which to save the photo file, and if there's a camera app
+      // (by querying PackageManager)
+      boolean canTakePhoto = mPhotoFile != null && captureImage.resolveActivity(packageManager) != null;
+      // enable/disable the Photo Button accordingly
+      mPhotoButton.setEnabled(canTakePhoto);
+      if (canTakePhoto) {
+         // tell camera to take a full-resolution (not a small-resolution thumbnail) picture and
+         // save it at the photo file location mPhotoFile
+         Uri uri = Uri.fromFile(mPhotoFile);
+         captureImage.putExtra(MediaStore.EXTRA_OUTPUT, uri);
+      }
+      mPhotoButton.setOnClickListener(new View.OnClickListener() {
+         @Override
+         public void onClick(View v) {
+            // start an implicit intent for a camera app, expecting the image to be passed back
+            startActivityForResult(captureImage, REQUEST_PHOTO);
+         }
+      });
+
+      mPhotoView = (ImageView)view.findViewById(R.id.crime_photo);
+      updatePhotoView();
 
       return view;
    }
@@ -186,6 +219,8 @@ public class CrimeFragment extends Fragment {
                      cursor.close();
                   }
                }
+            case REQUEST_PHOTO:
+               updatePhotoView();
          }
    }
 
@@ -213,10 +248,21 @@ public class CrimeFragment extends Fragment {
    private String getCrimeReport() {
       String dateFormat = "EEE, MMM dd";
       String dateString = DateFormat.format(dateFormat, mCrime.getDate()).toString();
-      String solvedString = mCrime.isSolved() ? getString(R.string.crime_report_solved) : getString(R.string.crime_report_unsolved);
+      // String solvedString = mCrime.isSolved() ? getString(R.string.crime_report_solved) : getString(R.string.crime_report_unsolved);
+      String solvedString = getString(mCrime.isSolved() ? R.string.crime_report_solved : R.string.crime_report_unsolved);
       String suspect = mCrime.getSuspect() == null ? getString(R.string.crime_report_no_suspect) : getString(R.string.crime_report_suspect, mCrime.getSuspect());
 
       String report = getString(R.string.crime_report, mCrime.getTitle(), dateString, solvedString, suspect);
       return report;
+   }
+
+   // this method loads a Bitmap into the ImageView member
+   private void updatePhotoView() {
+      if (mPhotoFile == null || !mPhotoFile.exists())
+         mPhotoView.setImageDrawable(null);
+      else {
+         Bitmap bitmap = PictureUtils.getScaledBitmap(mPhotoFile.getPath(), getActivity());
+         mPhotoView.setImageBitmap(bitmap);
+      }
    }
 }

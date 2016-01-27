@@ -1,7 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.bignerdranch.android.criminalintent2" >
-
+    <!-- ask Android for permission to read external storage, for use by the Camera Intent -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="18"/>
+    <!-- tell potential users that this app optionally uses the camera, allowing other apps (like
+     Google Play store) to refuse to install this app if it uses a feature the device doesn't
+     support. required="false" means this app can still work without a camera -->
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false"/>
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"

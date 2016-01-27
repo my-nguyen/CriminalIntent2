@@ -22,6 +22,11 @@ public class Crime {
       mDate = new Date();
    }
 
+   public String getPhotoFilename() {
+      // the filename will be unique since it's based on the Crime's ID
+      return "IMG_" + getId().toString() + ".jpg";
+   }
+
    public String toString() {
       StringBuilder builder = new StringBuilder();
       builder.append(mTitle).append(", ").append(mDate).append(", ").append(mSolved ? "SOLVED" : "UNSOLVED");
