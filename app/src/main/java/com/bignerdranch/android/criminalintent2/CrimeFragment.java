@@ -2,11 +2,16 @@ package com.bignerdranch.android.criminalintent2;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.text.format.DateFormat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,9 +31,12 @@ public class CrimeFragment extends Fragment {
    private EditText  mTitleField;
    private Button    mDateButton;
    private CheckBox  mSolvedCheckBox;
+   private Button    mReportButton;
+   private Button    mSuspectButton;
    private static final String   ARG_CRIME_ID = "crime_id";
    private static final String   DIALOG_DATE = "DialogDate";
    private static final int      REQUEST_DATE = 0;
+   private static final int      REQUEST_CONTACT = 1;
 
    @Override
    public void onCreate(Bundle savedInstanceState) {
@@ -56,12 +64,14 @@ public class CrimeFragment extends Fragment {
          @Override
          public void beforeTextChanged(CharSequence s, int start, int count, int after) {
          }
+
          @Override
          // this method is the only one to care about; the other 2 methods are ignored. this method
          // sets the Crime title to the text entered by the user.
          public void onTextChanged(CharSequence s, int start, int before, int count) {
             mCrime.setTitle(s.toString());
          }
+
          @Override
          public void afterTextChanged(Editable s) {
          }
@@ -94,18 +104,89 @@ public class CrimeFragment extends Fragment {
          }
       });
 
+      // compose a crime report based on data from the current Crime object and invoke an activity
+      // on the device that can send the report by way of an implicit Intent.
+      mReportButton = (Button)view.findViewById(R.id.crime_report);
+      mReportButton.setOnClickListener(new View.OnClickListener() {
+         @Override
+         public void onClick(View v) {
+            // specify the implicit Intent's action as ACTION_SEND
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            // the data sent is plain text
+            intent.setType("text/plain");
+            // stuff the text report as extra
+            intent.putExtra(Intent.EXTRA_TEXT, getCrimeReport());
+            // stuff the subject as extra
+            intent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.crime_report_subject));
+            // specify a Chooser, which presents a list of choices of activity that can service the report
+            intent = Intent.createChooser(intent, getString(R.string.send_report));
+            startActivity(intent);
+         }
+      });
+
+      // enable the user to pick an item from the contacts database by way of an implicit intent
+      final Intent pickContact = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
+      // dummy code to verify the PackageManager filter below
+      // pickContact.addCategory(Intent.CATEGORY_HOME);
+      mSuspectButton = (Button)view.findViewById(R.id.crime_suspect);
+      mSuspectButton.setOnClickListener(new View.OnClickListener() {
+         @Override
+         public void onClick(View v) {
+            // expect to receive data (suspect name) back from the Contacts activity
+            startActivityForResult(pickContact, REQUEST_CONTACT);
+         }
+      });
+      if (mCrime.getSuspect() != null)
+         // once a suspect is assigned, show the name on the suspect button
+         mSuspectButton.setText(mCrime.getSuspect());
+      // check to see if the device has a Contacts app; otherwise this application will crash
+      PackageManager packageManager = getActivity().getPackageManager();
+      // PackageManager knows about all the components installed on your device. resolveActivity()
+      // asks PackageManager to find an activity that matches the Intent given.
+      if (packageManager.resolveActivity(pickContact, PackageManager.MATCH_DEFAULT_ONLY) == null)
+         mSuspectButton.setEnabled(false);
+
       return view;
    }
 
    @Override
-   // this method receives a Date object sent back from DatePickerFragment and updates the Date
-   // Button view accordingly.
    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-      if (resultCode == Activity.RESULT_OK && requestCode == REQUEST_DATE) {
-         Date date = (Date)data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
-         mCrime.setDate(date);
-         mDateButton.setText(mCrime.getDate().toString());
-      }
+      if (resultCode == Activity.RESULT_OK)
+         switch(requestCode) {
+            case REQUEST_DATE:
+               // receive a Date object sent back from DatePickerFragment and update the Date Button
+               // view accordingly.
+               Date date = (Date)data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
+               mCrime.setDate(date);
+               mDateButton.setText(mCrime.getDate().toString());
+               break;
+            case REQUEST_CONTACT:
+               // receive a contacts database from the contacts application, query that database
+               // and extract the contact name
+               if (data != null) {
+                  // receive a contacts database, which is a data URI, which is a locator that
+                  // points at the single contact the user picked
+                  Uri contactUri = data.getData();
+                  // specify display name as column for the query
+                  String[] queryFields = new String[] { ContactsContract.Contacts.DISPLAY_NAME };
+                  // query the contacts database
+                  Cursor cursor = getActivity().getContentResolver()
+                        .query(contactUri, queryFields, null, null, null);
+                  try {
+                     // double-check that you actually got results
+                     if (cursor.getCount() != 0) {
+                        // the query result (cursor) contains only one item. so pull out the first
+                        // column of the first row of data - that's the suspect's name
+                        cursor.moveToFirst();
+                        String suspect = cursor.getString(0);
+                        mCrime.setSuspect(suspect);
+                        mSuspectButton.setText(suspect);
+                     }
+                  } finally {
+                     cursor.close();
+                  }
+               }
+         }
    }
 
    @Override
@@ -127,5 +208,15 @@ public class CrimeFragment extends Fragment {
       CrimeFragment fragment = new CrimeFragment();
       fragment.setArguments(args);
       return fragment;
+   }
+
+   private String getCrimeReport() {
+      String dateFormat = "EEE, MMM dd";
+      String dateString = DateFormat.format(dateFormat, mCrime.getDate()).toString();
+      String solvedString = mCrime.isSolved() ? getString(R.string.crime_report_solved) : getString(R.string.crime_report_unsolved);
+      String suspect = mCrime.getSuspect() == null ? getString(R.string.crime_report_no_suspect) : getString(R.string.crime_report_suspect, mCrime.getSuspect());
+
+      String report = getString(R.string.crime_report, mCrime.getTitle(), dateString, solvedString, suspect);
+      return report;
    }
 }
